@@ -1,10 +1,18 @@
 package cn.yiiguxing.plugin.translate.ui;
 
-import cn.yiiguxing.plugin.translate.AppStorage;
-import cn.yiiguxing.plugin.translate.Settings;
-import cn.yiiguxing.plugin.translate.Utils;
-import cn.yiiguxing.plugin.translate.action.AutoSelectionMode;
-import cn.yiiguxing.plugin.translate.compat.IdeaCompat;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
+import javax.swing.*;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
+import org.jetbrains.annotations.NotNull;
+
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.browsers.BrowserLauncher;
 import com.intellij.ide.browsers.WebBrowser;
@@ -19,17 +27,13 @@ import com.intellij.ui.components.labels.ActionLink;
 import com.intellij.ui.components.labels.LinkLabel;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ui.JBUI;
-import org.jetbrains.annotations.NotNull;
 
-import javax.swing.*;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import cn.yiiguxing.plugin.translate.AppStorage;
+import cn.yiiguxing.plugin.translate.Constants;
+import cn.yiiguxing.plugin.translate.Settings;
+import cn.yiiguxing.plugin.translate.Utils;
+import cn.yiiguxing.plugin.translate.action.AutoSelectionMode;
+import cn.yiiguxing.plugin.translate.compat.IdeaCompat;
 
 /**
  * 设置页
@@ -37,33 +41,68 @@ import java.awt.event.ItemListener;
 @SuppressWarnings("Since15")
 public class SettingsPanel {
 
-    private static final String API_KEY_URL = "http://fanyi.youdao.com/openapi?path=data-mode";
-
     private static final int INDEX_INCLUSIVE = 0;
+
     private static final int INDEX_EXCLUSIVE = 1;
 
     private JPanel mWholePanel;
+
     private JPanel mSelectionSettingsPanel;
-    private JPanel mApiKeySettingsPanel;
+
+    private JPanel mYoudaoSettingsPanel;
+
+    private JPanel mGoogleSettingsPanel;
+
+    private JPanel mBaiduSettingsPanel;
 
     private JComboBox<String> mSelectionMode;
-    private JTextField mKeyNameField;
-    private JTextField mKeyValueField;
-    private JCheckBox mDefaultApiKey;
-    private LinkLabel mGetApiKeyLink;
-    private JLabel mMessage;
+
+    private JTextField youdaoAppId;
+
+    private JTextField youdaoSecret;
+
+    private JTextField googleAppId;
+
+    private JTextField googleSecret;
+
+    private JTextField baiduAppId;
+
+    private JTextField baiduSecret;
+
+    private JCheckBox youdaoCheck;
+
+    private JCheckBox googleCheck;
+
+    private JCheckBox baiduCheck;
+
+    private LinkLabel youdaoLink;
+
+    private LinkLabel googleLink;
+
+    private LinkLabel baiduLink;
+
     private JPanel mHistoryPanel;
+
     private ComboBox mMaxHistoriesSize;
+
     private JButton mClearHistoriesButton;
+
     private JPanel mFontPanel;
+
     private JCheckBox mFontCheckBox;
+
     private FontComboBox mPrimaryFontComboBox;
+
     private FontComboBox mPhoneticFontComboBox;
+
     private JTextPane mFontPreview;
+
     private JLabel mPrimaryFontLabel;
+
     private JLabel mPhoneticFontLabel;
 
     private Settings mSettings;
+
     private AppStorage mAppStorage;
 
     public JComponent createPanel(@NotNull Settings settings, @NotNull AppStorage appStorage) {
@@ -78,13 +117,30 @@ public class SettingsPanel {
     }
 
     private void createUIComponents() {
-        mGetApiKeyLink = new ActionLink("", new AnAction() {
+
+        youdaoLink = new ActionLink("", new AnAction() {
             @Override
             public void actionPerformed(AnActionEvent anActionEvent) {
-                obtainApiKey();
+                obtainApiKey(Constants.HELP_YOUDAO);
             }
         });
-        mGetApiKeyLink.setIcon(AllIcons.Ide.Link);
+        youdaoLink.setIcon(AllIcons.Ide.Link);
+
+        baiduLink = new ActionLink("", new AnAction() {
+            @Override
+            public void actionPerformed(AnActionEvent anActionEvent) {
+                obtainApiKey(Constants.HELP_BAIDU);
+            }
+        });
+        baiduLink.setIcon(AllIcons.Ide.Link);
+
+        googleLink = new ActionLink("", new AnAction() {
+            @Override
+            public void actionPerformed(AnActionEvent anActionEvent) {
+                obtainApiKey(Constants.HELP_GOOGLE);
+            }
+        });
+        googleLink.setIcon(AllIcons.Ide.Link);
 
         mPrimaryFontComboBox = new FontComboBox();
         if (IdeaCompat.BUILD_NUMBER >= IdeaCompat.Version.IDEA2017_1) {
@@ -107,7 +163,9 @@ public class SettingsPanel {
         mSelectionSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("取词模式"));
         mFontPanel.setBorder(IdeBorderFactory.createTitledBorder("字体"));
         mHistoryPanel.setBorder(IdeBorderFactory.createTitledBorder("历史记录"));
-        mApiKeySettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("有道 API KEY"));
+        mYoudaoSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("有道翻译"));
+        mGoogleSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("Google翻译"));
+        mBaiduSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("百度翻译"));
     }
 
     private void setRenderer() {
@@ -125,12 +183,34 @@ public class SettingsPanel {
     }
 
     private void setListeners() {
-        mDefaultApiKey.addItemListener(new ItemListener() {
+
+        youdaoCheck.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
-                switchKey();
+                final boolean selected = youdaoCheck.isSelected();
+                youdaoSecret.setEnabled(selected);
+                youdaoAppId.setEnabled(selected);
             }
         });
+
+        googleCheck.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                final boolean selected = googleCheck.isSelected();
+                googleSecret.setEnabled(selected);
+                googleAppId.setEnabled(selected);
+            }
+        });
+
+        baiduCheck.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                final boolean selected = baiduCheck.isSelected();
+                baiduSecret.setEnabled(selected);
+                baiduAppId.setEnabled(selected);
+            }
+        });
+
         mFontCheckBox.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
@@ -189,43 +269,48 @@ public class SettingsPanel {
         document.setCharacterAttributes(4, 41, attributeSet, true);
     }
 
-    private static void obtainApiKey() {
+    private static void obtainApiKey(String url) {
         WebBrowser browser = WebBrowserManager.getInstance().getFirstActiveBrowser();
         if (browser != null) {
-            BrowserLauncher.getInstance()
-                    .browseUsingPath(API_KEY_URL, null, browser, null, ArrayUtil.EMPTY_STRING_ARRAY);
+            BrowserLauncher.getInstance().browseUsingPath(url, null, browser, null, ArrayUtil.EMPTY_STRING_ARRAY);
         }
     }
 
-    private void switchKey() {
-        if (mDefaultApiKey.isSelected()) {
-            useDefaultKey();
-        } else {
-            useCustomKey();
-        }
-    }
+    /**
+     * 默认key 和 default key 切换
+     */
+    // private void switchKey() {
+    // if (mDefaultApiKey.isSelected()) {
+    // useDefaultKey();
+    // } else {
+    // useCustomKey();
+    // }
+    // }
 
-    private void useDefaultKey() {
-        if (Utils.isEmptyOrBlankString(mKeyNameField.getText())
-                && Utils.isEmptyOrBlankString(mKeyValueField.getText())) {
-            mSettings.setApiKeyName(null);
-            mSettings.setApiKeyValue(null);
-        }
+    /**
+     * 使用默认Key
+     */
+    // private void useDefaultKey() {
+    // if (Utils.isEmptyOrBlankString(youdaoAppId.getText())
+    // && Utils.isEmptyOrBlankString(youdaoSecret.getText())) {
+    // mSettings.setApiKeyName(null);
+    // mSettings.setApiKeyValue(null);
+    // }
+    //
+    // youdaoAppId.setText("Default");
+    // youdaoAppId.setEnabled(false);
+    // youdaoSecret.setText("Default");
+    // youdaoSecret.setEnabled(false);
+    // mMessage.setVisible(true);
+    // }
 
-        mKeyNameField.setText("Default");
-        mKeyNameField.setEnabled(false);
-        mKeyValueField.setText("Default");
-        mKeyValueField.setEnabled(false);
-        mMessage.setVisible(true);
-    }
-
-    private void useCustomKey() {
-        mKeyNameField.setText(mSettings.getApiKeyName());
-        mKeyNameField.setEnabled(true);
-        mKeyValueField.setText(mSettings.getApiKeyValue());
-        mKeyValueField.setEnabled(true);
-        mMessage.setVisible(false);
-    }
+    // private void useCustomKey() {
+    // youdaoAppId.setText(mSettings.getApiKeyName());
+    // youdaoAppId.setEnabled(true);
+    // youdaoSecret.setText(mSettings.getApiKeyValue());
+    // youdaoSecret.setEnabled(true);
+    // mMessage.setVisible(false);
+    // }
 
     @NotNull
     private AutoSelectionMode getAutoSelectionMode() {
@@ -242,7 +327,7 @@ public class SettingsPanel {
             try {
                 return Integer.parseInt((String) size);
             } catch (NumberFormatException e) {
-                /*no-op*/
+                /* no-op */
             }
         }
 
@@ -250,15 +335,19 @@ public class SettingsPanel {
     }
 
     public boolean isModified() {
-        return (!Utils.isEmptyOrBlankString(mKeyNameField.getText())
-                && !Utils.isEmptyOrBlankString(mKeyValueField.getText()))
+        return (!Utils.isEmptyOrBlankString(youdaoAppId.getText())
+                && !Utils.isEmptyOrBlankString(youdaoSecret.getText()))
+                || (!Utils.isEmptyOrBlankString(googleAppId.getText())
+                        && !Utils.isEmptyOrBlankString(googleSecret.getText()))
+                || (!Utils.isEmptyOrBlankString(baiduAppId.getText())
+                        && !Utils.isEmptyOrBlankString(baiduSecret.getText()))
                 || mSettings.getAutoSelectionMode() != getAutoSelectionMode()
                 || getMaxHistorySize() != mAppStorage.getMaxHistorySize()
                 || mFontCheckBox.isSelected() != mSettings.isOverrideFont()
                 || (mSettings.getPrimaryFontFamily() != null
-                && mSettings.getPrimaryFontFamily().equals(mPrimaryFontComboBox.getFontName()))
+                        && mSettings.getPrimaryFontFamily().equals(mPrimaryFontComboBox.getFontName()))
                 || (mSettings.getPhoneticFontFamily() != null
-                && mSettings.getPhoneticFontFamily().equals(mPhoneticFontComboBox.getFontName()));
+                        && mSettings.getPhoneticFontFamily().equals(mPhoneticFontComboBox.getFontName()));
     }
 
     public void apply() {
@@ -271,12 +360,13 @@ public class SettingsPanel {
         mSettings.setPrimaryFontFamily(mPrimaryFontComboBox.getFontName());
         mSettings.setPhoneticFontFamily(mPhoneticFontComboBox.getFontName());
 
-        boolean validKey = !Utils.isEmptyOrBlankString(mKeyNameField.getText())
-                && !Utils.isEmptyOrBlankString(mKeyValueField.getText());
-        boolean useDefault = mDefaultApiKey.isSelected();
+        boolean validKey = !Utils.isEmptyOrBlankString(youdaoAppId.getText())
+                && !Utils.isEmptyOrBlankString(youdaoSecret.getText());
+        // boolean useDefault = mDefaultApiKey.isSelected();
+        boolean useDefault = false;
         if (!useDefault) {
-            mSettings.setApiKeyName(mKeyNameField.getText());
-            mSettings.setApiKeyValue(mKeyValueField.getText());
+            mSettings.setApiKeyName(youdaoAppId.getText());
+            mSettings.setApiKeyValue(youdaoSecret.getText());
         }
 
         mSettings.setUseDefaultKey(useDefault || !validKey);
@@ -291,8 +381,8 @@ public class SettingsPanel {
         previewPhoneticFont(mSettings.getPhoneticFontFamily());
 
         mMaxHistoriesSize.getEditor().setItem(Integer.toString(mAppStorage.getMaxHistorySize()));
-        mDefaultApiKey.setSelected(mSettings.isUseDefaultKey());
-        mSelectionMode.setSelectedIndex(mSettings.getAutoSelectionMode() == AutoSelectionMode.INCLUSIVE
-                ? INDEX_INCLUSIVE : INDEX_EXCLUSIVE);
+        // mDefaultApiKey.setSelected(mSettings.isUseDefaultKey());
+        mSelectionMode.setSelectedIndex(
+                mSettings.getAutoSelectionMode() == AutoSelectionMode.INCLUSIVE ? INDEX_INCLUSIVE : INDEX_EXCLUSIVE);
     }
 }
