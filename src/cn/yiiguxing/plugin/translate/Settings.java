@@ -1,6 +1,8 @@
 package cn.yiiguxing.plugin.translate;
 
-import cn.yiiguxing.plugin.translate.action.AutoSelectionMode;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ServiceManager;
@@ -8,8 +10,8 @@ import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.util.messages.Topic;
 import com.intellij.util.xmlb.XmlSerializerUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import cn.yiiguxing.plugin.translate.action.AutoSelectionMode;
 
 /**
  * Settings
@@ -17,13 +19,21 @@ import org.jetbrains.annotations.Nullable;
 @State(name = "TranslationSettings", storages = @Storage(id = "other", file = "$APP_CONFIG$/translation.xml"))
 public class Settings implements PersistentStateComponent<Settings> {
 
-    private boolean useDefaultKey = true;
-    private String apiKeyName;
-    private String apiKeyValue;
+
+
+    private String proxyHost;
+    private int proxyPort;
+    private String proxyUser;
+    private String proxyPassword;
+
+    private boolean supportGoogle;
+    private boolean supportBaidu;
+    private boolean supportYoudao;
+
     private boolean overrideFont;
     private String primaryFontFamily;
     private String phoneticFontFamily;
-    private boolean disableApiKeyNotification;
+
     @NotNull
     private AutoSelectionMode autoSelectionMode = AutoSelectionMode.INCLUSIVE;
 
@@ -50,13 +60,12 @@ public class Settings implements PersistentStateComponent<Settings> {
     @Override
     public String toString() {
         return "Settings{" +
-                "useDefaultKey=" + useDefaultKey +
-                ", apiKeyName='" + apiKeyName + '\'' +
-                ", apiKeyValue='" + apiKeyValue + '\'' +
+                "supportGoogle=" + supportGoogle +
+                ", supportBaidu='" + supportBaidu + '\'' +
+                ", supportYoudao='" + supportYoudao + '\'' +
                 ", overrideFont=" + overrideFont +
                 ", primaryFontFamily='" + primaryFontFamily + '\'' +
                 ", phoneticFontFamily='" + phoneticFontFamily + '\'' +
-                ", disableApiKeyNotification=" + disableApiKeyNotification +
                 ", autoSelectionMode=" + autoSelectionMode +
                 '}';
     }
@@ -74,62 +83,6 @@ public class Settings implements PersistentStateComponent<Settings> {
      */
     public void setAutoSelectionMode(@NotNull AutoSelectionMode autoSelectionMode) {
         this.autoSelectionMode = autoSelectionMode;
-    }
-
-    /**
-     * 返回是否是使用默认的API KEY.
-     */
-    public boolean isUseDefaultKey() {
-        return useDefaultKey;
-    }
-
-    /**
-     * 设置是否使用默认的API KEY.
-     */
-    public void setUseDefaultKey(boolean useDefaultKey) {
-        this.useDefaultKey = useDefaultKey;
-    }
-
-    /**
-     * 返回API KEY name.
-     */
-    public String getApiKeyName() {
-        return this.apiKeyName;
-    }
-
-    /**
-     * 设置API KEY name.
-     */
-    public void setApiKeyName(String apiKeyName) {
-        this.apiKeyName = apiKeyName;
-    }
-
-    /**
-     * 返回API KEY value.
-     */
-    public String getApiKeyValue() {
-        return this.apiKeyValue;
-    }
-
-    /**
-     * 设置API KEY value.
-     */
-    public void setApiKeyValue(String apiKeyValue) {
-        this.apiKeyValue = apiKeyValue;
-    }
-
-    /**
-     * 返回是否关闭更换API KEY通知
-     */
-    public boolean isDisableApiKeyNotification() {
-        return disableApiKeyNotification;
-    }
-
-    /**
-     * 设置关闭更换API KEY通知
-     */
-    public void setDisableApiKeyNotification(boolean disableApiKeyNotification) {
-        this.disableApiKeyNotification = disableApiKeyNotification;
     }
 
     /**
@@ -189,5 +142,61 @@ public class Settings implements PersistentStateComponent<Settings> {
                 Topic.create("TranslationSettingsChanged", SettingsChangeListener.class);
 
         void onOverrideFontChanged(@NotNull Settings settings);
+    }
+
+    public String getProxyHost() {
+        return proxyHost;
+    }
+
+    public void setProxyHost(String proxyHost) {
+        this.proxyHost = proxyHost;
+    }
+
+    public int getProxyPort() {
+        return proxyPort;
+    }
+
+    public void setProxyPort(int proxyPort) {
+        this.proxyPort = proxyPort;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    public String getProxyPassword() {
+        return proxyPassword;
+    }
+
+    public void setProxyPassword(String proxyPassword) {
+        this.proxyPassword = proxyPassword;
+    }
+
+    public boolean isSupportGoogle() {
+        return supportGoogle;
+    }
+
+    public void setSupportGoogle(boolean supportGoogle) {
+        this.supportGoogle = supportGoogle;
+    }
+
+    public boolean isSupportBaidu() {
+        return supportBaidu;
+    }
+
+    public void setSupportBaidu(boolean supportBaidu) {
+        this.supportBaidu = supportBaidu;
+    }
+
+    public boolean isSupportYoudao() {
+        return supportYoudao;
+    }
+
+    public void setSupportYoudao(boolean supportYoudao) {
+        this.supportYoudao = supportYoudao;
     }
 }

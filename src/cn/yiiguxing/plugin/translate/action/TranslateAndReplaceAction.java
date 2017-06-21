@@ -1,7 +1,7 @@
 package cn.yiiguxing.plugin.translate.action;
 
+import cn.yiiguxing.plugin.translate.PluginTranslator;
 import cn.yiiguxing.plugin.translate.Settings;
-import cn.yiiguxing.plugin.translate.Translator;
 import cn.yiiguxing.plugin.translate.Utils;
 import cn.yiiguxing.plugin.translate.compat.SelectWordUtilCompat;
 import cn.yiiguxing.plugin.translate.model.BasicExplain;
@@ -23,6 +23,8 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.ReadonlyStatusHandler;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
+import com.leopoo.translate.enums.ResultState;
+import com.leopoo.translate.util.TranslationResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,24 +87,23 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
     }
 
     @Override
-    protected void onActionPerformed(final AnActionEvent e,
-                                     @NotNull final Editor editor,
-                                     @NotNull final TextRange selectionRange) {
+    protected void onActionPerformed(final AnActionEvent e, @NotNull
+    final Editor editor, @NotNull
+    final TextRange selectionRange) {
         VirtualFile virtualFile = e.getData(PlatformDataKeys.VIRTUAL_FILE);
         final Project project = e.getProject();
-        if (project == null || (virtualFile != null &&
-                ReadonlyStatusHandler.getInstance(project).ensureFilesWritable(virtualFile).hasReadonlyFiles())) {
-            return;
-        }
+        if (project == null || (virtualFile != null && ReadonlyStatusHandler.getInstance(project)
+                .ensureFilesWritable(virtualFile).hasReadonlyFiles())) { return; }
 
         final String text = editor.getDocument().getText(selectionRange);
         if (Utils.isEmptyOrBlankString(text))
             return;
 
-        Translator.getInstance().query(text, new Translator.Callback() {
+        PluginTranslator.getInstance().query(text, new PluginTranslator.Callback() {
             @Override
-            public void onQuery(@Nullable String query, @Nullable final QueryResult result) {
-                if (result == null || result.getErrorCode() != QueryResult.ERROR_CODE_NONE)
+            public void onQuery(@Nullable String query, @Nullable
+            final TranslationResult result) {
+                if (result == null || result.getStatus() == ResultState.FAILD.getStatus())
                     return;
 
                 final List<LookupElement> replaceLookup = getReplaceLookupElements(result);
@@ -119,23 +120,21 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
         });
     }
 
-    private static void doReplace(@NotNull final Editor editor,
-                                  @NotNull final TextRange selectionRange,
-                                  @NotNull final String targetText,
-                                  @NotNull final List<LookupElement> replaceLookup) {
-        if (editor.isDisposed() || editor.getProject() == null ||
-                !targetText.equals(editor.getDocument().getText(selectionRange)) ||
-                !selectionRange.containsOffset(editor.getCaretModel().getOffset())) {
-            return;
-        }
+    private static void doReplace(@NotNull
+    final Editor editor, @NotNull
+    final TextRange selectionRange, @NotNull
+    final String targetText, @NotNull
+    final List<LookupElement> replaceLookup) {
+        if (editor.isDisposed() || editor.getProject() == null
+                || !targetText.equals(editor.getDocument().getText(selectionRange))
+                || !selectionRange.containsOffset(editor.getCaretModel().getOffset())) { return; }
 
         final SelectionModel selectionModel = editor.getSelectionModel();
         final int startOffset = selectionRange.getStartOffset();
         final int endOffset = selectionRange.getEndOffset();
         if (selectionModel.hasSelection()) {
-            if (selectionModel.getSelectionStart() != startOffset || selectionModel.getSelectionEnd() != endOffset) {
-                return;
-            }
+            if (selectionModel.getSelectionStart() != startOffset
+                    || selectionModel.getSelectionEnd() != endOffset) { return; }
         } else {
             selectionModel.setSelection(startOffset, endOffset);
         }
@@ -146,9 +145,7 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
         LookupElement[] items = replaceLookup.toArray(new LookupElement[replaceLookup.size()]);
         final LookupEx lookup = LookupManager.getInstance(editor.getProject()).showLookup(editor, items);
 
-        if (lookup == null) {
-            return;
-        }
+        if (lookup == null) { return; }
 
         final HighlightManager highlightManager = HighlightManager.getInstance(editor.getProject());
         final List<RangeHighlighter> highlighters = addHighlight(highlightManager, editor, selectionRange);
@@ -169,8 +166,7 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
 
     @NotNull
     private static List<RangeHighlighter> addHighlight(@NotNull HighlightManager highlightManager,
-                                                       @NotNull Editor editor,
-                                                       @NotNull TextRange selectionRange) {
+            @NotNull Editor editor, @NotNull TextRange selectionRange) {
         final ArrayList<RangeHighlighter> highlighters = new ArrayList<RangeHighlighter>();
         highlightManager.addOccurrenceHighlight(editor, selectionRange.getStartOffset(), selectionRange.getEndOffset(),
                 HIGHLIGHT_ATTRIBUTES, 0, highlighters, null);
@@ -190,15 +186,16 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
     }
 
     @NotNull
-    private static List<LookupElement> getReplaceLookupElements(@NotNull QueryResult result) {
+    private static List<LookupElement> getReplaceLookupElements(@NotNull TranslationResult result) {
         final List<LookupElement> replaceLookup;
 
-        BasicExplain basicExplain = result.getBasicExplain();
-        if (basicExplain != null) {
-            replaceLookup = getReplaceLookupElements(Utils.expandExplain(basicExplain.getExplains()));
-        } else {
-            replaceLookup = getReplaceLookupElements(result.getTranslation());
-        }
+        // BasicExplain basicExplain = result.getBasicExplain();
+        // if (basicExplain != null) {
+        // replaceLookup =
+        // getReplaceLookupElements(Utils.expandExplain(basicExplain.getExplains()));
+        // } else {
+        replaceLookup = getReplaceLookupElements(result.getDst().toArray(new String[] {}));
+        // }
 
         return replaceLookup;
     }
@@ -251,12 +248,13 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
         return Collections.unmodifiableList(new ArrayList<LookupElement>(result));
     }
 
-    private static void build(@NotNull final List<String> words,
-                              @NotNull final StringBuilder camel,
-                              @NotNull final StringBuilder pascal,
-                              @NotNull final StringBuilder lowerWithUnder,
-                              @NotNull final StringBuilder capsWithUnder,
-                              @NotNull final StringBuilder withSpace) {
+    private static void build(@NotNull
+    final List<String> words, @NotNull
+    final StringBuilder camel, @NotNull
+    final StringBuilder pascal, @NotNull
+    final StringBuilder lowerWithUnder, @NotNull
+    final StringBuilder capsWithUnder, @NotNull
+    final StringBuilder withSpace) {
         for (int i = 0; i < words.size(); i++) {
             String word = words.get(i);
 
@@ -285,9 +283,7 @@ public class TranslateAndReplaceAction extends AutoSelectAction {
     @Nullable
     private static List<String> fixAndSplitForVariable(@NotNull String explains) {
         String explain = Utils.splitExplain(explains)[1];
-        if (Utils.isEmptyOrBlankString(explain)) {
-            return null;
-        }
+        if (Utils.isEmptyOrBlankString(explain)) { return null; }
 
         String fixed = explain.replaceFirst(PATTERN_FIX, "");
         return StringUtil.getWordsIn(fixed);

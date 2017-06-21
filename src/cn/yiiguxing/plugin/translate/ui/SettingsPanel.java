@@ -7,29 +7,26 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.ide.browsers.BrowserLauncher;
 import com.intellij.ide.browsers.WebBrowser;
 import com.intellij.ide.browsers.WebBrowserManager;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.FontComboBox;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.ListCellRendererWrapper;
-import com.intellij.ui.components.labels.ActionLink;
-import com.intellij.ui.components.labels.LinkLabel;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ui.JBUI;
 
 import cn.yiiguxing.plugin.translate.AppStorage;
-import cn.yiiguxing.plugin.translate.Constants;
 import cn.yiiguxing.plugin.translate.Settings;
 import cn.yiiguxing.plugin.translate.Utils;
 import cn.yiiguxing.plugin.translate.action.AutoSelectionMode;
@@ -49,37 +46,7 @@ public class SettingsPanel {
 
     private JPanel mSelectionSettingsPanel;
 
-    private JPanel mYoudaoSettingsPanel;
-
-    private JPanel mGoogleSettingsPanel;
-
-    private JPanel mBaiduSettingsPanel;
-
     private JComboBox<String> mSelectionMode;
-
-    private JTextField youdaoAppId;
-
-    private JTextField youdaoSecret;
-
-    private JTextField googleAppId;
-
-    private JTextField googleSecret;
-
-    private JTextField baiduAppId;
-
-    private JTextField baiduSecret;
-
-    private JCheckBox youdaoCheck;
-
-    private JCheckBox googleCheck;
-
-    private JCheckBox baiduCheck;
-
-    private LinkLabel youdaoLink;
-
-    private LinkLabel googleLink;
-
-    private LinkLabel baiduLink;
 
     private JPanel mHistoryPanel;
 
@@ -101,6 +68,26 @@ public class SettingsPanel {
 
     private JLabel mPhoneticFontLabel;
 
+    private JPanel mGoogleProxyPanel;
+
+    private JTextField proxyHost;
+
+    private JTextField proxyPort;
+
+    private JTextField proxyUser;
+
+    private JPasswordField proxyPassword;
+
+    private JPanel mTranslatePanel;
+
+    private JRadioButton googleTranslateRadio;
+
+    private JRadioButton baiduTranslateRadio;
+
+    private JRadioButton youdaoTranslateRadio;
+
+    private JFormattedTextField formattedTextField1;
+
     private Settings mSettings;
 
     private AppStorage mAppStorage;
@@ -117,30 +104,6 @@ public class SettingsPanel {
     }
 
     private void createUIComponents() {
-
-        youdaoLink = new ActionLink("", new AnAction() {
-            @Override
-            public void actionPerformed(AnActionEvent anActionEvent) {
-                obtainApiKey(Constants.HELP_YOUDAO);
-            }
-        });
-        youdaoLink.setIcon(AllIcons.Ide.Link);
-
-        baiduLink = new ActionLink("", new AnAction() {
-            @Override
-            public void actionPerformed(AnActionEvent anActionEvent) {
-                obtainApiKey(Constants.HELP_BAIDU);
-            }
-        });
-        baiduLink.setIcon(AllIcons.Ide.Link);
-
-        googleLink = new ActionLink("", new AnAction() {
-            @Override
-            public void actionPerformed(AnActionEvent anActionEvent) {
-                obtainApiKey(Constants.HELP_GOOGLE);
-            }
-        });
-        googleLink.setIcon(AllIcons.Ide.Link);
 
         mPrimaryFontComboBox = new FontComboBox();
         if (IdeaCompat.BUILD_NUMBER >= IdeaCompat.Version.IDEA2017_1) {
@@ -163,9 +126,8 @@ public class SettingsPanel {
         mSelectionSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("取词模式"));
         mFontPanel.setBorder(IdeBorderFactory.createTitledBorder("字体"));
         mHistoryPanel.setBorder(IdeBorderFactory.createTitledBorder("历史记录"));
-        mYoudaoSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("有道翻译"));
-        mGoogleSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("Google翻译"));
-        mBaiduSettingsPanel.setBorder(IdeBorderFactory.createTitledBorder("百度翻译"));
+        mGoogleProxyPanel.setBorder(IdeBorderFactory.createTitledBorder("Google Translate Proxy"));
+        mTranslatePanel.setBorder(IdeBorderFactory.createTitledBorder("翻译方式"));
     }
 
     private void setRenderer() {
@@ -184,30 +146,14 @@ public class SettingsPanel {
 
     private void setListeners() {
 
-        youdaoCheck.addItemListener(new ItemListener() {
+        googleTranslateRadio.addChangeListener(new ChangeListener() {
             @Override
-            public void itemStateChanged(ItemEvent e) {
-                final boolean selected = youdaoCheck.isSelected();
-                youdaoSecret.setEnabled(selected);
-                youdaoAppId.setEnabled(selected);
-            }
-        });
-
-        googleCheck.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                final boolean selected = googleCheck.isSelected();
-                googleSecret.setEnabled(selected);
-                googleAppId.setEnabled(selected);
-            }
-        });
-
-        baiduCheck.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                final boolean selected = baiduCheck.isSelected();
-                baiduSecret.setEnabled(selected);
-                baiduAppId.setEnabled(selected);
+            public void stateChanged(ChangeEvent e) {
+                final boolean selected = googleTranslateRadio.isSelected();
+                proxyHost.setEnabled(selected);
+                proxyPort.setEnabled(selected);
+                proxyUser.setEnabled(selected);
+                proxyPassword.setEnabled(selected);
             }
         });
 
@@ -276,42 +222,6 @@ public class SettingsPanel {
         }
     }
 
-    /**
-     * 默认key 和 default key 切换
-     */
-    // private void switchKey() {
-    // if (mDefaultApiKey.isSelected()) {
-    // useDefaultKey();
-    // } else {
-    // useCustomKey();
-    // }
-    // }
-
-    /**
-     * 使用默认Key
-     */
-    // private void useDefaultKey() {
-    // if (Utils.isEmptyOrBlankString(youdaoAppId.getText())
-    // && Utils.isEmptyOrBlankString(youdaoSecret.getText())) {
-    // mSettings.setApiKeyName(null);
-    // mSettings.setApiKeyValue(null);
-    // }
-    //
-    // youdaoAppId.setText("Default");
-    // youdaoAppId.setEnabled(false);
-    // youdaoSecret.setText("Default");
-    // youdaoSecret.setEnabled(false);
-    // mMessage.setVisible(true);
-    // }
-
-    // private void useCustomKey() {
-    // youdaoAppId.setText(mSettings.getApiKeyName());
-    // youdaoAppId.setEnabled(true);
-    // youdaoSecret.setText(mSettings.getApiKeyValue());
-    // youdaoSecret.setEnabled(true);
-    // mMessage.setVisible(false);
-    // }
-
     @NotNull
     private AutoSelectionMode getAutoSelectionMode() {
         if (mSelectionMode.getSelectedIndex() == INDEX_INCLUSIVE) {
@@ -335,19 +245,24 @@ public class SettingsPanel {
     }
 
     public boolean isModified() {
-        return (!Utils.isEmptyOrBlankString(youdaoAppId.getText())
-                && !Utils.isEmptyOrBlankString(youdaoSecret.getText()))
-                || (!Utils.isEmptyOrBlankString(googleAppId.getText())
-                        && !Utils.isEmptyOrBlankString(googleSecret.getText()))
-                || (!Utils.isEmptyOrBlankString(baiduAppId.getText())
-                        && !Utils.isEmptyOrBlankString(baiduSecret.getText()))
-                || mSettings.getAutoSelectionMode() != getAutoSelectionMode()
+        return (mSettings.getAutoSelectionMode() != getAutoSelectionMode()
                 || getMaxHistorySize() != mAppStorage.getMaxHistorySize()
                 || mFontCheckBox.isSelected() != mSettings.isOverrideFont()
                 || (mSettings.getPrimaryFontFamily() != null
-                        && mSettings.getPrimaryFontFamily().equals(mPrimaryFontComboBox.getFontName()))
+                && mSettings.getPrimaryFontFamily().equals(mPrimaryFontComboBox.getFontName()))
                 || (mSettings.getPhoneticFontFamily() != null
-                        && mSettings.getPhoneticFontFamily().equals(mPhoneticFontComboBox.getFontName()));
+                && mSettings.getPhoneticFontFamily().equals(mPhoneticFontComboBox.getFontName()))
+                || (mSettings.isSupportBaidu() != baiduTranslateRadio.isSelected())
+                || (mSettings.isSupportGoogle() != googleTranslateRadio.isSelected())
+                || (mSettings.isSupportYoudao() != youdaoTranslateRadio.isSelected())
+
+                || (mSettings.getProxyHost() != null && mSettings.getProxyHost().equals(proxyHost.getText()))
+                || (proxyPort.getText() != null && mSettings.getProxyPort() != Integer.valueOf(proxyPort.getText()))
+                || (mSettings.getProxyUser() != null && mSettings.getProxyUser().equals(proxyUser.getText()))
+                || (mSettings.getProxyPassword() != null
+                && mSettings.getProxyPassword().equals(proxyPassword.getPassword()))
+
+        );
     }
 
     public void apply() {
@@ -360,16 +275,17 @@ public class SettingsPanel {
         mSettings.setPrimaryFontFamily(mPrimaryFontComboBox.getFontName());
         mSettings.setPhoneticFontFamily(mPhoneticFontComboBox.getFontName());
 
-        boolean validKey = !Utils.isEmptyOrBlankString(youdaoAppId.getText())
-                && !Utils.isEmptyOrBlankString(youdaoSecret.getText());
-        // boolean useDefault = mDefaultApiKey.isSelected();
-        boolean useDefault = false;
-        if (!useDefault) {
-            mSettings.setApiKeyName(youdaoAppId.getText());
-            mSettings.setApiKeyValue(youdaoSecret.getText());
+        mSettings.setProxyHost(proxyHost.getText());
+        if (proxyPort.getText() != null) {
+            mSettings.setProxyPort(Integer.valueOf(proxyPort.getText()));
         }
+        mSettings.setProxyUser(proxyUser.getText());
+        mSettings.setProxyPassword(new String(proxyPassword.getPassword()));
 
-        mSettings.setUseDefaultKey(useDefault || !validKey);
+        mSettings.setSupportBaidu(baiduTranslateRadio.isSelected());
+        mSettings.setSupportGoogle(googleTranslateRadio.isSelected());
+        mSettings.setSupportYoudao(youdaoTranslateRadio.isSelected());
+
         mSettings.setAutoSelectionMode(getAutoSelectionMode());
     }
 
@@ -379,6 +295,15 @@ public class SettingsPanel {
         mPhoneticFontComboBox.setFontName(mSettings.getPhoneticFontFamily());
         previewPrimaryFont(mSettings.getPrimaryFontFamily());
         previewPhoneticFont(mSettings.getPhoneticFontFamily());
+
+        baiduTranslateRadio.setSelected(mSettings.isSupportBaidu());
+        googleTranslateRadio.setSelected(mSettings.isSupportGoogle());
+        youdaoTranslateRadio.setSelected(mSettings.isSupportYoudao());
+
+        proxyHost.setText(mSettings.getProxyHost());
+        proxyPort.setText(Integer.toString(mSettings.getProxyPort()));
+        proxyUser.setText(mSettings.getProxyUser());
+        proxyPassword.setText(mSettings.getProxyPassword());
 
         mMaxHistoriesSize.getEditor().setItem(Integer.toString(mAppStorage.getMaxHistorySize()));
         // mDefaultApiKey.setSelected(mSettings.isUseDefaultKey());

@@ -2,4 +2,6 @@
 !.idea/compiler.xml
 !/.idea/codeInsightSettings.xml
 out/
+*.
 /*.zip
+iml

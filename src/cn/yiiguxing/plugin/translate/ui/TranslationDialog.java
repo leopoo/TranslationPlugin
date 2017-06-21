@@ -1,9 +1,21 @@
 package cn.yiiguxing.plugin.translate.ui;
 
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
 
-import cn.yiiguxing.plugin.translate.*;
-import cn.yiiguxing.plugin.translate.model.BasicExplain;
-import cn.yiiguxing.plugin.translate.model.QueryResult;
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.StyleSheet;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -20,61 +32,68 @@ import com.intellij.util.ui.AnimatedIcon;
 import com.intellij.util.ui.JBFont;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.leopoo.translate.util.TranslationResult;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.List;
+import cn.yiiguxing.plugin.translate.*;
 
-public class TranslationDialog extends DialogWrapper implements
-        TranslationContract.View,
-        AppStorage.HistoriesChangedListener,
-        Settings.SettingsChangeListener {
+public class TranslationDialog extends DialogWrapper
+        implements TranslationContract.View, AppStorage.HistoriesChangedListener, Settings.SettingsChangeListener {
 
     private static final int MIN_WIDTH = 400;
+
     private static final int MIN_HEIGHT = 450;
 
     private static final Border BORDER_ACTIVE = new LineBorder(new JBColor(JBColor.GRAY, Gray._35));
+
     private static final Border BORDER_PASSIVE = new LineBorder(new JBColor(JBColor.LIGHT_GRAY, Gray._75));
 
     private static final String CARD_MSG = "msg";
+
     private static final String CARD_PROCESS = "process";
+
     private static final String CARD_RESULT = "result";
 
     private final Project mProject;
 
     private JPanel mTitlePanel;
+
     private JPanel mContentPane;
+
     private JButton mQueryBtn;
+
     private JPanel mMsgPanel;
+
     private JTextPane mResultText;
+
     private JScrollPane mScrollPane;
+
     @SuppressWarnings("Since15")
     private JComboBox<String> mQueryComboBox;
+
     private JPanel mTextPanel;
+
     private JPanel mProcessPanel;
+
     private AnimatedIcon mProcessIcon;
+
     private JLabel mQueryingLabel;
+
     private JEditorPane mMessage;
+
     private CardLayout mLayout;
 
     private final MyModel mModel;
+
     private final TranslationContract.Presenter mTranslationPresenter;
 
     private String mLastSuccessfulQuery;
-    private QueryResult mLastSuccessfulResult;
+
+    private TranslationResult mLastSuccessfulResult;
+
     private boolean mBroadcast;
 
     private boolean mLastMoveWasInsideDialog;
+
     private final AWTEventListener mAwtActivityListener = new AWTEventListener() {
 
         @Override
@@ -113,8 +132,8 @@ public class TranslationDialog extends DialogWrapper implements
 
         getRootPane().setOpaque(false);
 
-        Toolkit.getDefaultToolkit().addAWTEventListener(mAwtActivityListener, AWTEvent.MOUSE_MOTION_EVENT_MASK
-                | AWTEvent.KEY_EVENT_MASK);
+        Toolkit.getDefaultToolkit().addAWTEventListener(mAwtActivityListener,
+                AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.KEY_EVENT_MASK);
 
         Disposer.register(getDisposable(), new Disposable() {
             @Override
@@ -132,9 +151,7 @@ public class TranslationDialog extends DialogWrapper implements
             }
         });
 
-        MessageBusConnection messageBusConn = ApplicationManager
-                .getApplication()
-                .getMessageBus()
+        MessageBusConnection messageBusConn = ApplicationManager.getApplication().getMessageBus()
                 .connect(getDisposable());
         messageBusConn.subscribe(Settings.SettingsChangeListener.TOPIC, this);
         messageBusConn.subscribe(AppStorage.HistoriesChangedListener.TOPIC, this);
@@ -210,8 +227,8 @@ public class TranslationDialog extends DialogWrapper implements
         HTMLEditorKit kit = UIUtil.getHTMLEditorKit();
         JBFont font = JBUI.Fonts.label(14);
         StyleSheet styleSheet = kit.getStyleSheet();
-        styleSheet.addRule(String.format("body {font-family: %s;font-size: %s; text-align: center;}",
-                font.getFamily(), font.getSize()));
+        styleSheet.addRule(String.format("body {font-family: %s;font-size: %s; text-align: center;}", font.getFamily(),
+                font.getSize()));
 
         return kit;
     }
@@ -219,11 +236,15 @@ public class TranslationDialog extends DialogWrapper implements
     private boolean isInside(@NotNull RelativePoint target) {
         Component cmp = target.getOriginalComponent();
 
-        if (!cmp.isShowing()) return true;
-        if (cmp instanceof MenuElement) return false;
+        if (!cmp.isShowing())
+            return true;
+        if (cmp instanceof MenuElement)
+            return false;
         Window window = this.getWindow();
-        if (UIUtil.isDescendingFrom(cmp, window)) return true;
-        if (!isShowing()) return false;
+        if (UIUtil.isDescendingFrom(cmp, window))
+            return true;
+        if (!isShowing())
+            return false;
         Point point = target.getScreenPoint();
         SwingUtilities.convertPointFromScreen(point, window);
         return window.contains(point);
@@ -404,7 +425,8 @@ public class TranslationDialog extends DialogWrapper implements
     }
 
     @Override
-    public void showResult(@NotNull final String query, @NotNull QueryResult result) {
+    public void showResult(@NotNull
+    final String query, @NotNull TranslationResult result) {
         mLastSuccessfulQuery = query;
         mLastSuccessfulResult = result;
         setResultText(result);
@@ -412,7 +434,7 @@ public class TranslationDialog extends DialogWrapper implements
         mProcessIcon.suspend();
     }
 
-    private void setResultText(@NotNull QueryResult result) {
+    private void setResultText(@NotNull TranslationResult result) {
         Styles.insertStylishResultText(mResultText, result, new Styles.OnTextClickListener() {
             @Override
             public void onTextClick(@NotNull JTextPane textPane, @NotNull String text) {
@@ -434,6 +456,7 @@ public class TranslationDialog extends DialogWrapper implements
     @SuppressWarnings("Since15")
     private static class MyModel extends AbstractListModel<String> implements ComboBoxModel<String> {
         private final List<String> myFullList;
+
         private Object mySelectedItem;
 
         MyModel(@NotNull List<String> list) {
@@ -469,6 +492,7 @@ public class TranslationDialog extends DialogWrapper implements
 
     private final class ComboRenderer extends ListCellRendererWrapper<String> {
         private final StringBuilder builder = new StringBuilder();
+
         private final StringBuilder tipBuilder = new StringBuilder();
 
         @Override
@@ -488,31 +512,35 @@ public class TranslationDialog extends DialogWrapper implements
             builder.setLength(0);
             tipBuilder.setLength(0);
 
-            builder.append("<html><b>")
-                    .append(value)
-                    .append("</b>");
+            builder.append("<html><b>").append(value).append("</b>");
             tipBuilder.append(builder);
 
-            final QueryResult cache = mTranslationPresenter.getCache(value);
+            // TODO 不知道这里要做什么
+            final TranslationResult cache = mTranslationPresenter.getCache(value);
             if (cache != null) {
-                BasicExplain basicExplain = cache.getBasicExplain();
-                String[] translation = basicExplain != null ? basicExplain.getExplains() : cache.getTranslation();
+                // BasicExplain basicExplain = cache.getBasicExplain();
+                // String[] translation = basicExplain != null ?
+                // basicExplain.getExplains() : cache.getTranslation();
 
-                if (translation != null && translation.length > 0) {
-                    builder.append("  -  <i><small>");
-                    tipBuilder.append("<p/><i>");
+                // if (translation != null && translation.length > 0) {
+                // builder.append(" - <i><small>");
+                // tipBuilder.append("<p/><i>");
 
-                    for (String tran : translation) {
-                        builder.append(tran).append("; ");
-                        tipBuilder.append(tran).append("<br/>");
-                    }
+                // for (String tran : translation) {
+                // builder.append(tran).append("; ");
+                // tipBuilder.append(tran).append("<br/>");
+                // }
 
-                    builder.setLength(builder.length() - 2);
-                    builder.append("</small></i>");
-
-                    tipBuilder.setLength(builder.length() - 5);
-                    tipBuilder.append("</i>");
+                List<String> translation = cache.getDst();
+                for (String tran : translation) {
+                    builder.append(tran).append("; ");
+                    tipBuilder.append(tran).append("<br/>");
                 }
+                builder.setLength(builder.length() - 2);
+                builder.append("</small></i>");
+
+                tipBuilder.setLength(builder.length() - 5);
+                tipBuilder.append("</i>");
             }
 
             builder.append("</html>");

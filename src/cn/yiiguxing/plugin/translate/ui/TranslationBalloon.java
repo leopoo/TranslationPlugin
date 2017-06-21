@@ -27,6 +27,7 @@ import com.intellij.ui.popup.PopupFactoryImpl;
 import com.intellij.util.Alarm;
 import com.intellij.util.Consumer;
 import com.intellij.util.ui.*;
+import com.leopoo.translate.util.TranslationResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -208,7 +209,7 @@ public class TranslationBalloon implements TranslationContract.View {
     }
 
     @Override
-    public void showResult(@NotNull String query, @NotNull QueryResult result) {
+    public void showResult(@NotNull String query, @NotNull TranslationResult result) {
         if (mBalloon != null) {
             if (mBalloon.isDisposed()) {
                 return;

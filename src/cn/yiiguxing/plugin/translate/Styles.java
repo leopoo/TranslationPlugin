@@ -1,21 +1,24 @@
 package cn.yiiguxing.plugin.translate;
 
-import cn.yiiguxing.plugin.translate.model.BasicExplain;
-import cn.yiiguxing.plugin.translate.model.QueryResult;
-import cn.yiiguxing.plugin.translate.model.WebExplain;
-import cn.yiiguxing.plugin.translate.ui.PhoneticButton;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.ui.JBColor;
-import com.intellij.util.Consumer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.swing.*;
-import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.swing.*;
+import javax.swing.text.*;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.ui.JBColor;
+import com.intellij.util.Consumer;
+import com.leopoo.translate.util.TranslationResult;
+
+import cn.yiiguxing.plugin.translate.model.BasicExplain;
+import cn.yiiguxing.plugin.translate.model.WebExplain;
+import cn.yiiguxing.plugin.translate.ui.PhoneticButton;
 
 /**
  * 文本样式
@@ -26,21 +29,30 @@ public final class Styles {
     private static final Logger LOGGER = Logger.getInstance("#" + Styles.class.getCanonicalName());
 
     private static final SimpleAttributeSet ATTR_QUERY = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_EXPLAIN_BASE = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_EXPLAIN = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_PRE_EXPLAINS = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_EXPLAINS = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_EXPLAINS_HOVER = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_WEB_EXPLAIN_TITLE = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_WEB_EXPLAIN_KEY = new SimpleAttributeSet();
+
     private static final SimpleAttributeSet ATTR_WEB_EXPLAIN_VALUES = new SimpleAttributeSet();
 
     private static final float QUERY_FONT_SCALE = 1.35f;
+
     private static final float PRE_EXPLAINS_FONT_SCALE = 1.15f;
+
     private static final float EXPLAINS_FONT_SCALE = 1.15f;
 
     private static final Pattern PATTERN_WORD = Pattern.compile("[a-zA-Z]+");
-
 
     static {
         StyleConstants.setItalic(ATTR_QUERY, true);
@@ -83,9 +95,8 @@ public final class Styles {
         textPane.addMouseMotionListener(listener);
     }
 
-    public static void insertStylishResultText(@NotNull final JTextPane textPane,
-                                               @NotNull QueryResult result,
-                                               @Nullable OnTextClickListener explainsClickListener) {
+    public static void insertStylishResultText(@NotNull
+    final JTextPane textPane, @NotNull TranslationResult result, @Nullable OnTextClickListener explainsClickListener) {
         setMouseListeners(textPane);
 
         final StyledDocument document = textPane.getStyledDocument();
@@ -99,15 +110,21 @@ public final class Styles {
 
         insertHeader(textPane, result);
 
-        BasicExplain basicExplain = result.getBasicExplain();
-        if (basicExplain != null) {
-            insertExplain(textPane, document, basicExplain.getExplains(), true, explainsClickListener);
-        } else {
-            insertExplain(textPane, document, result.getTranslation(), false, explainsClickListener);
-        }
+        // TODO 有道讲解
+        // BasicExplain basicExplain = result.getBasicExplain();
+        // if (basicExplain != null) {
+        // insertExplain(textPane, document, basicExplain.getExplains(), true,
+        // explainsClickListener);
+        // } else {
+        // insertExplain(textPane, document, result.getTranslation(), false,
+        // explainsClickListener);
+        // }
+        //
+        // WebExplain[] webExplains = result.getWebExplains();
+        // insertWebExplain(document, webExplains);
 
-        WebExplain[] webExplains = result.getWebExplains();
-        insertWebExplain(document, webExplains);
+        // TODO zbb
+        insertExplain(textPane, document, result.getTranslation(), false, explainsClickListener);
 
         if (document.getLength() < 1)
             return;
@@ -130,9 +147,9 @@ public final class Styles {
         return attr;
     }
 
-    private static void insertHeader(@NotNull JTextPane textPane, QueryResult result) {
+    private static void insertHeader(@NotNull JTextPane textPane, TranslationResult result) {
         Document document = textPane.getDocument();
-        String query = result.getQuery();
+        String query = result.getSrc();
 
         try {
             if (!Utils.isEmptyOrBlankString(query)) {
@@ -142,19 +159,21 @@ public final class Styles {
                         updateFontSize(ATTR_QUERY, textPane.getFont(), QUERY_FONT_SCALE));
             }
 
-            BasicExplain be = result.getBasicExplain();
+            // TODO 语音处理
+            // BasicExplain be = result.getBasicExplain();
+            BasicExplain be = null;
             if (be != null) {
                 boolean hasPhonetic = false;
 
                 String phoUK = be.getPhoneticUK();
                 if (!Utils.isEmptyOrBlankString(phoUK)) {
-                    insertPhonetic(document, result.getQuery(), phoUK, Speech.Phonetic.UK);
+                    insertPhonetic(document, result.getSrc(), phoUK, Speech.Phonetic.UK);
                     hasPhonetic = true;
                 }
 
                 String phoUS = be.getPhoneticUS();
                 if (!Utils.isEmptyOrBlankString(phoUS)) {
-                    insertPhonetic(document, result.getQuery(), phoUS, Speech.Phonetic.US);
+                    insertPhonetic(document, result.getSrc(), phoUS, Speech.Phonetic.US);
                     hasPhonetic = true;
                 }
 
@@ -175,10 +194,9 @@ public final class Styles {
         }
     }
 
-    private static void insertPhonetic(@NotNull Document document,
-                                       @NotNull final String query,
-                                       @NotNull String phoneticText,
-                                       @NotNull final Speech.Phonetic phonetic) throws BadLocationException {
+    private static void insertPhonetic(@NotNull Document document, @NotNull
+    final String query, @NotNull String phoneticText, @NotNull
+    final Speech.Phonetic phonetic) throws BadLocationException {
         document.insertString(document.getLength(), phonetic == Speech.Phonetic.UK ? "英[" : "美[", ATTR_EXPLAIN_BASE);
 
         final Settings settings = Settings.getInstance();
@@ -204,11 +222,9 @@ public final class Styles {
         document.insertString(document.getLength(), " ", attr);
     }
 
-    private static void insertExplain(@NotNull final JTextPane textPane,
-                                      @NotNull StyledDocument doc,
-                                      @Nullable String[] explains,
-                                      boolean splitLabel,
-                                      @Nullable OnTextClickListener explainsClickListener) {
+    private static void insertExplain(@NotNull
+    final JTextPane textPane, @NotNull StyledDocument doc, @Nullable String[] explains, boolean splitLabel,
+            @Nullable OnTextClickListener explainsClickListener) {
         if (explains == null || explains.length == 0)
             return;
 
@@ -287,14 +303,17 @@ public final class Styles {
     @SuppressWarnings("WeakerAccess")
     private static final class ClickableStyle {
         private final JTextPane mTextPane;
+
         private final String mText;
+
         private final int mStartOffset;
+
         private final OnTextClickListener mListener;
 
         private boolean mHover;
 
         public ClickableStyle(@NotNull JTextPane textPane, @NotNull String text, int startOffset,
-                              @Nullable OnTextClickListener listener) {
+                @Nullable OnTextClickListener listener) {
             this.mTextPane = textPane;
             this.mText = text;
             this.mStartOffset = startOffset;
@@ -310,7 +329,8 @@ public final class Styles {
         void onHover() {
             if (!mHover) {
                 StyledDocument document = mTextPane.getStyledDocument();
-                MutableAttributeSet attr = updateFontSize(ATTR_EXPLAINS_HOVER, mTextPane.getFont(), EXPLAINS_FONT_SCALE);
+                MutableAttributeSet attr = updateFontSize(ATTR_EXPLAINS_HOVER, mTextPane.getFont(),
+                        EXPLAINS_FONT_SCALE);
                 attr = setClickableStyle(attr, this);
                 document.setCharacterAttributes(mStartOffset, mText.length(), attr, true);
 

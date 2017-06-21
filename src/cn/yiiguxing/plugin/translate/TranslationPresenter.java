@@ -3,6 +3,8 @@ package cn.yiiguxing.plugin.translate;
 import cn.yiiguxing.plugin.translate.model.QueryResult;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.leopoo.translate.enums.ResultState;
+import com.leopoo.translate.util.TranslationResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,13 +16,14 @@ public class TranslationPresenter implements TranslationContract.Presenter {
 
     private final AppStorage mAppStorage;
 
-    private final Translator mTranslator;
+    private final PluginTranslator mTranslator;
+
     private final TranslationContract.View mTranslationView;
 
     private String mCurrentQuery;
 
     public TranslationPresenter(@NotNull TranslationContract.View view) {
-        mTranslator = Translator.getInstance();
+        mTranslator = PluginTranslator.getInstance();
         this.mTranslationView = view;
         mAppStorage = AppStorage.getInstance();
     }
@@ -33,7 +36,7 @@ public class TranslationPresenter implements TranslationContract.Presenter {
 
     @Nullable
     @Override
-    public QueryResult getCache(String query) {
+    public TranslationResult getCache(String query) {
         if (Utils.isEmptyOrBlankString(query))
             return null;
 
@@ -52,9 +55,9 @@ public class TranslationPresenter implements TranslationContract.Presenter {
 
         // 防止内存泄漏
         final Reference<TranslationPresenter> presenterRef = new WeakReference<TranslationPresenter>(this);
-        mTranslator.query(query, new Translator.Callback() {
+        mTranslator.query(query, new PluginTranslator.Callback() {
             @Override
-            public void onQuery(final String query, final QueryResult result) {
+            public void onQuery(final String query, final TranslationResult result) {
                 ApplicationManager.getApplication().invokeLater(new Runnable() {
                     @Override
                     public void run() {
@@ -68,14 +71,13 @@ public class TranslationPresenter implements TranslationContract.Presenter {
         });
     }
 
-    private void onPostResult(String query, QueryResult result) {
+    private void onPostResult(String query, TranslationResult result) {
         if (Utils.isEmptyOrBlankString(query) || !query.equals(mCurrentQuery))
             return;
 
         mCurrentQuery = null;
-        String errorMessage = Utils.getErrorMessage(result);
-        if (errorMessage != null) {
-            mTranslationView.showError(query, errorMessage);
+        if (result.getStatus() == ResultState.FAILD.getStatus()) {
+            mTranslationView.showError(query, result.getErrorMessage());
         } else {
             mTranslationView.showResult(query, result);
         }

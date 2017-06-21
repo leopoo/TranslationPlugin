@@ -56,8 +56,8 @@
                             serviceImplementation="cn.yiiguxing.plugin.translate.Settings"/>
         <applicationConfigurable instance="cn.yiiguxing.plugin.translate.TranslationOptionsConfigurable"/>
 
-        <applicationService serviceInterface="cn.yiiguxing.plugin.translate.Translator"
-                            serviceImplementation="cn.yiiguxing.plugin.translate.Translator"/>
+        <applicationService serviceInterface="cn.yiiguxing.plugin.translate.PluginTranslator"
+                            serviceImplementation="cn.yiiguxing.plugin.translate.PluginTranslator"/>
         <applicationService serviceInterface="cn.yiiguxing.plugin.translate.AppStorage"
                             serviceImplementation="cn.yiiguxing.plugin.translate.AppStorage"/>
         <applicationService serviceInterface="cn.yiiguxing.plugin.translate.TranslationUiManager"
